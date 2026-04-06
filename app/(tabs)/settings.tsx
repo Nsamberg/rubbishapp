@@ -33,9 +33,9 @@ export default function SettingsScreen() {
     hoursBefore: 6,
     enabledBinTypes: ['black', 'blue', 'food'],
   });
-  const [saving, setSaving] = useState(false);
   const [savedBanner, setSavedBanner] = useState(false);
   const bannerOpacity = useRef(new Animated.Value(0)).current;
+  const isFirstLoad = useRef(true);
 
   const { collections } = useCollections();
   const { scheduleAll } = useNotifications();
@@ -46,6 +46,7 @@ export default function SettingsScreen() {
       getReminderPrefs(),
     ]);
     setAddress(savedAddress);
+    isFirstLoad.current = true;
     setPrefs(savedPrefs);
   }, []);
 
@@ -55,27 +56,26 @@ export default function SettingsScreen() {
     }, [loadData])
   );
 
-  const showBanner = () => {
+  const showBanner = useCallback(() => {
     setSavedBanner(true);
+    bannerOpacity.setValue(0);
     Animated.sequence([
       Animated.timing(bannerOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
       Animated.delay(1800),
       Animated.timing(bannerOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start(() => setSavedBanner(false));
-  };
+  }, [bannerOpacity]);
 
-  const handleSavePrefs = async () => {
-    setSaving(true);
-    try {
-      await setReminderPrefs(prefs);
-      await scheduleAll(collections, prefs);
-      showBanner();
-    } catch {
-      Alert.alert('Error', 'Could not save settings. Please try again.');
-    } finally {
-      setSaving(false);
+  // Auto-save whenever prefs change, skipping the initial load
+  useEffect(() => {
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
     }
-  };
+    setReminderPrefs(prefs);
+    scheduleAll(collections, prefs);
+    showBanner();
+  }, [prefs]);
 
   const handleChangeAddress = () => {
     Alert.alert(
@@ -192,16 +192,6 @@ export default function SettingsScreen() {
             </View>
           </>
         )}
-
-        <Pressable
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSavePrefs}
-          disabled={saving}
-        >
-          <Text style={styles.saveButtonText}>
-            {saving ? 'Saving…' : 'Save reminder settings'}
-          </Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -299,13 +289,6 @@ const styles = StyleSheet.create({
     color: '#c0392b',
     fontWeight: '500',
   },
-  saveButton: {
-    backgroundColor: '#1a4fa8',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 28,
-  },
   savedBanner: {
     backgroundColor: '#2e7d32',
     borderRadius: 12,
@@ -317,13 +300,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
     fontSize: 15,
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
