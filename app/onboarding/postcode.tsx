@@ -23,7 +23,7 @@ export default function PostcodeScreen() {
   const handleLookup = async () => {
     const trimmed = postcode.trim();
     if (!UK_POSTCODE_REGEX.test(trimmed)) {
-      Alert.alert('Invalid postcode', 'Please enter a valid UK postcode, e.g. W13 9TP');
+      Alert.alert('Invalid postcode', 'Please enter a valid UK postcode, e.g. W5 1XX');
       return;
     }
 
@@ -60,7 +60,7 @@ export default function PostcodeScreen() {
 
         <TextInput
           style={styles.input}
-          placeholder="e.g. W13 9TP"
+          placeholder="e.g. W5 1XX"
           placeholderTextColor="#999"
           value={postcode}
           onChangeText={(text) => setPostcode(text.toUpperCase())}
