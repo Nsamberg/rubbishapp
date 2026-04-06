@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Animated,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -33,6 +34,8 @@ export default function SettingsScreen() {
     enabledBinTypes: ['black', 'blue', 'food'],
   });
   const [saving, setSaving] = useState(false);
+  const [savedBanner, setSavedBanner] = useState(false);
+  const bannerOpacity = useRef(new Animated.Value(0)).current;
 
   const { collections } = useCollections();
   const { scheduleAll } = useNotifications();
@@ -52,12 +55,21 @@ export default function SettingsScreen() {
     }, [loadData])
   );
 
+  const showBanner = () => {
+    setSavedBanner(true);
+    Animated.sequence([
+      Animated.timing(bannerOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.delay(1800),
+      Animated.timing(bannerOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+    ]).start(() => setSavedBanner(false));
+  };
+
   const handleSavePrefs = async () => {
     setSaving(true);
     try {
       await setReminderPrefs(prefs);
       await scheduleAll(collections, prefs);
-      Alert.alert('Saved', 'Your reminder settings have been saved.');
+      showBanner();
     } catch {
       Alert.alert('Error', 'Could not save settings. Please try again.');
     } finally {
@@ -96,6 +108,12 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.pageTitle}>Settings</Text>
+
+        {savedBanner && (
+          <Animated.View style={[styles.savedBanner, { opacity: bannerOpacity }]}>
+            <Text style={styles.savedBannerText}>✓ Settings saved</Text>
+          </Animated.View>
+        )}
 
         {/* Address section */}
         <Text style={styles.sectionTitle}>Your address</Text>
@@ -287,6 +305,18 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginTop: 28,
+  },
+  savedBanner: {
+    backgroundColor: '#2e7d32',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  savedBannerText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
   },
   saveButtonDisabled: {
     opacity: 0.6,

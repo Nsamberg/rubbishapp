@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BinType, ReminderPreferences, SavedAddress } from '../api/types';
 
@@ -12,26 +13,42 @@ const DEFAULT_REMINDER_PREFS: ReminderPreferences = {
   enabledBinTypes: ['black', 'blue', 'food'] as BinType[],
 };
 
+// On web, AsyncStorage doesn't persist reliably — use localStorage directly.
+const store = {
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === 'web') return localStorage.getItem(key);
+    return AsyncStorage.getItem(key);
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === 'web') { localStorage.setItem(key, value); return; }
+    return AsyncStorage.setItem(key, value);
+  },
+  async removeItem(key: string): Promise<void> {
+    if (Platform.OS === 'web') { localStorage.removeItem(key); return; }
+    return AsyncStorage.removeItem(key);
+  },
+};
+
 export async function getSavedAddress(): Promise<SavedAddress | null> {
-  const raw = await AsyncStorage.getItem(KEYS.SAVED_ADDRESS);
+  const raw = await store.getItem(KEYS.SAVED_ADDRESS);
   if (!raw) return null;
   return JSON.parse(raw) as SavedAddress;
 }
 
 export async function setSavedAddress(address: SavedAddress): Promise<void> {
-  await AsyncStorage.setItem(KEYS.SAVED_ADDRESS, JSON.stringify(address));
+  await store.setItem(KEYS.SAVED_ADDRESS, JSON.stringify(address));
 }
 
 export async function clearSavedAddress(): Promise<void> {
-  await AsyncStorage.removeItem(KEYS.SAVED_ADDRESS);
+  await store.removeItem(KEYS.SAVED_ADDRESS);
 }
 
 export async function getReminderPrefs(): Promise<ReminderPreferences> {
-  const raw = await AsyncStorage.getItem(KEYS.REMINDER_PREFS);
+  const raw = await store.getItem(KEYS.REMINDER_PREFS);
   if (!raw) return DEFAULT_REMINDER_PREFS;
   return { ...DEFAULT_REMINDER_PREFS, ...JSON.parse(raw) } as ReminderPreferences;
 }
 
 export async function setReminderPrefs(prefs: ReminderPreferences): Promise<void> {
-  await AsyncStorage.setItem(KEYS.REMINDER_PREFS, JSON.stringify(prefs));
+  await store.setItem(KEYS.REMINDER_PREFS, JSON.stringify(prefs));
 }
