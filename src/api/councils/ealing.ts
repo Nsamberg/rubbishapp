@@ -1,8 +1,10 @@
+import { Platform } from 'react-native';
 import { AddressResult, BinType, Collection } from '../types';
 import { CouncilAPI } from '../council';
 import { parseDDMMYYYY } from '../../utils/dates';
 
-const BASE_URL = 'https://www.ealing.gov.uk/site/custom_scripts/WasteCollectionWS/home';
+const DIRECT_URL = 'https://www.ealing.gov.uk/site/custom_scripts/WasteCollectionWS/home';
+const isWeb = Platform.OS === 'web';
 
 function mapServiceToBinType(service: string): BinType {
   const s = service.toUpperCase();
@@ -12,17 +14,37 @@ function mapServiceToBinType(service: string): BinType {
   return 'unknown';
 }
 
+async function fetchAddressDirect(postcode: string) {
+  const normalised = postcode.trim().replace(/\s+/g, '+');
+  return fetch(`${DIRECT_URL}/GetAddress`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `Postcode=${encodeURIComponent(normalised).replace(/%2B/g, '+')}`,
+  });
+}
+
+async function fetchAddressProxy(postcode: string) {
+  return fetch(`/.netlify/functions/get-address?postcode=${encodeURIComponent(postcode.trim())}`);
+}
+
+async function fetchCollectionDirect(uprn: string) {
+  return fetch(`${DIRECT_URL}/FindCollection`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `UPRN=${encodeURIComponent(uprn)}`,
+  });
+}
+
+async function fetchCollectionProxy(uprn: string) {
+  return fetch(`/.netlify/functions/find-collection?uprn=${encodeURIComponent(uprn)}`);
+}
+
 export const ealingCouncil: CouncilAPI = {
   id: 'ealing',
   name: 'Ealing Council',
 
   async getAddresses(postcode: string): Promise<AddressResult[]> {
-    const normalised = postcode.trim().replace(/\s+/g, '+');
-    const response = await fetch(`${BASE_URL}/GetAddress`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `Postcode=${encodeURIComponent(normalised).replace(/%2B/g, '+')}`,
-    });
+    const response = await (isWeb ? fetchAddressProxy(postcode) : fetchAddressDirect(postcode));
 
     if (!response.ok) {
       throw new Error(`Failed to fetch addresses: ${response.status}`);
@@ -40,11 +62,7 @@ export const ealingCouncil: CouncilAPI = {
   },
 
   async getCollections(uprn: string): Promise<Collection[]> {
-    const response = await fetch(`${BASE_URL}/FindCollection`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `UPRN=${encodeURIComponent(uprn)}`,
-    });
+    const response = await (isWeb ? fetchCollectionProxy(uprn) : fetchCollectionDirect(uprn));
 
     if (!response.ok) {
       throw new Error(`Failed to fetch collections: ${response.status}`);
