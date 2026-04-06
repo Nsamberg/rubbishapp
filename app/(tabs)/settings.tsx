@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   Pressable,
   SafeAreaView,
@@ -34,6 +33,7 @@ export default function SettingsScreen() {
     enabledBinTypes: ['black', 'blue', 'food'],
   });
   const [savedBanner, setSavedBanner] = useState(false);
+  const [confirmingChange, setConfirmingChange] = useState(false);
   const bannerOpacity = useRef(new Animated.Value(0)).current;
   const isFirstLoad = useRef(true);
 
@@ -66,7 +66,6 @@ export default function SettingsScreen() {
     ]).start(() => setSavedBanner(false));
   }, [bannerOpacity]);
 
-  // Auto-save whenever prefs change, skipping the initial load
   useEffect(() => {
     if (isFirstLoad.current) {
       isFirstLoad.current = false;
@@ -77,22 +76,9 @@ export default function SettingsScreen() {
     showBanner();
   }, [prefs]);
 
-  const handleChangeAddress = () => {
-    Alert.alert(
-      'Change address',
-      'This will remove your saved address and take you back to the setup screen.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          style: 'destructive',
-          onPress: async () => {
-            await clearSavedAddress();
-            router.replace('/onboarding/postcode');
-          },
-        },
-      ]
-    );
+  const handleConfirmChangeAddress = async () => {
+    await clearSavedAddress();
+    router.replace('/onboarding/postcode');
   };
 
   const toggleBinType = (binType: BinType) => {
@@ -121,9 +107,24 @@ export default function SettingsScreen() {
           <Text style={styles.addressText}>
             {address?.displayName ?? 'No address saved'}
           </Text>
-          <Pressable style={styles.changeButton} onPress={handleChangeAddress}>
-            <Text style={styles.changeButtonText}>Change address</Text>
-          </Pressable>
+
+          {confirmingChange ? (
+            <View style={styles.confirmRow}>
+              <Text style={styles.confirmText}>Remove this address?</Text>
+              <View style={styles.confirmButtons}>
+                <Pressable style={styles.confirmCancel} onPress={() => setConfirmingChange(false)}>
+                  <Text style={styles.confirmCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable style={styles.confirmDelete} onPress={handleConfirmChangeAddress}>
+                  <Text style={styles.confirmDeleteText}>Remove</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Pressable style={styles.changeButton} onPress={() => setConfirmingChange(true)}>
+              <Text style={styles.changeButtonText}>Change address</Text>
+            </Pressable>
+          )}
         </View>
 
         {/* Reminders section */}
@@ -198,107 +199,41 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scroll: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 24,
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  scroll: { padding: 20, paddingBottom: 40 },
+  pageTitle: { fontSize: 28, fontWeight: '700', color: '#1a1a1a', marginBottom: 24 },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#888',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-    marginTop: 20,
+    fontSize: 13, fontWeight: '600', color: '#888',
+    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: 20,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
+  card: { backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden' },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e8e8e8',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#e8e8e8',
   },
-  rowLabel: {
-    fontSize: 16,
-    color: '#1a1a1a',
-    flex: 1,
+  rowLabel: { fontSize: 16, color: '#1a1a1a', flex: 1 },
+  binRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  binDot: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  binDotEmoji: { fontSize: 16 },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#ccc', justifyContent: 'center', alignItems: 'center' },
+  radioSelected: { borderColor: '#1a4fa8' },
+  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#1a4fa8' },
+  addressText: { fontSize: 15, color: '#1a1a1a', padding: 16, paddingBottom: 8, lineHeight: 22 },
+  changeButton: { padding: 16, paddingTop: 8 },
+  changeButtonText: { fontSize: 15, color: '#c0392b', fontWeight: '500' },
+  confirmRow: { padding: 16, paddingTop: 8, gap: 10 },
+  confirmText: { fontSize: 14, color: '#555' },
+  confirmButtons: { flexDirection: 'row', gap: 10 },
+  confirmCancel: {
+    flex: 1, borderRadius: 10, borderWidth: 1, borderColor: '#ddd',
+    padding: 10, alignItems: 'center',
   },
-  binRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
+  confirmCancelText: { fontSize: 14, color: '#555', fontWeight: '500' },
+  confirmDelete: {
+    flex: 1, borderRadius: 10, backgroundColor: '#c0392b',
+    padding: 10, alignItems: 'center',
   },
-  binDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  binDotEmoji: {
-    fontSize: 16,
-  },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: '#ccc',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  radioSelected: {
-    borderColor: '#1a4fa8',
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#1a4fa8',
-  },
-  addressText: {
-    fontSize: 15,
-    color: '#1a1a1a',
-    padding: 16,
-    paddingBottom: 8,
-    lineHeight: 22,
-  },
-  changeButton: {
-    padding: 16,
-    paddingTop: 8,
-  },
-  changeButtonText: {
-    fontSize: 15,
-    color: '#c0392b',
-    fontWeight: '500',
-  },
-  savedBanner: {
-    backgroundColor: '#2e7d32',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    alignItems: 'center',
-  },
-  savedBannerText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 15,
-  },
+  confirmDeleteText: { fontSize: 14, color: '#fff', fontWeight: '600' },
+  savedBanner: { backgroundColor: '#2e7d32', borderRadius: 12, padding: 12, marginBottom: 8, alignItems: 'center' },
+  savedBannerText: { color: '#fff', fontWeight: '600', fontSize: 15 },
 });
