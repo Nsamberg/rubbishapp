@@ -3,8 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BinType, ReminderPreferences, SavedAddress } from '../api/types';
 
 const KEYS = {
-  SAVED_ADDRESS: '@rubbishapp/saved_address',
-  REMINDER_PREFS: '@rubbishapp/reminder_prefs',
+  SAVED_ADDRESS: 'rubbishapp_saved_address',
+  REMINDER_PREFS: 'rubbishapp_reminder_prefs',
 } as const;
 
 const DEFAULT_REMINDER_PREFS: ReminderPreferences = {
@@ -13,18 +13,33 @@ const DEFAULT_REMINDER_PREFS: ReminderPreferences = {
   enabledBinTypes: ['black', 'blue', 'food'] as BinType[],
 };
 
-// On web, AsyncStorage doesn't persist reliably — use localStorage directly.
+// Cookies persist across iOS PWA sessions; localStorage does not.
+function setCookie(name: string, value: string) {
+  const expires = new Date();
+  expires.setFullYear(expires.getFullYear() + 1);
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Strict`;
+}
+
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+function deleteCookie(name: string) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Strict`;
+}
+
 const store = {
   async getItem(key: string): Promise<string | null> {
-    if (Platform.OS === 'web') return localStorage.getItem(key);
+    if (Platform.OS === 'web') return getCookie(key);
     return AsyncStorage.getItem(key);
   },
   async setItem(key: string, value: string): Promise<void> {
-    if (Platform.OS === 'web') { localStorage.setItem(key, value); return; }
+    if (Platform.OS === 'web') { setCookie(key, value); return; }
     return AsyncStorage.setItem(key, value);
   },
   async removeItem(key: string): Promise<void> {
-    if (Platform.OS === 'web') { localStorage.removeItem(key); return; }
+    if (Platform.OS === 'web') { deleteCookie(key); return; }
     return AsyncStorage.removeItem(key);
   },
 };
