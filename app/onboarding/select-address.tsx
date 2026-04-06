@@ -24,6 +24,8 @@ export default function SelectAddressScreen() {
       uprn: address.uprn,
       councilId: 'ealing',
     });
+    // Small delay to ensure IDB transaction fully commits before navigation on iOS PWA
+    await new Promise((r) => setTimeout(r, 100));
     router.replace('/(tabs)/collections');
   };
 
