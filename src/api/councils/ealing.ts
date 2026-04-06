@@ -24,7 +24,7 @@ async function fetchAddressDirect(postcode: string) {
 }
 
 async function fetchAddressProxy(postcode: string) {
-  return fetch(`/.netlify/functions/get-address?postcode=${encodeURIComponent(postcode.trim())}`);
+  return fetch(`/api/get-address?postcode=${encodeURIComponent(postcode.trim())}`);
 }
 
 async function fetchCollectionDirect(uprn: string) {
@@ -36,7 +36,7 @@ async function fetchCollectionDirect(uprn: string) {
 }
 
 async function fetchCollectionProxy(uprn: string) {
-  return fetch(`/.netlify/functions/find-collection?uprn=${encodeURIComponent(uprn)}`);
+  return fetch(`/api/find-collection?uprn=${encodeURIComponent(uprn)}`);
 }
 
 export const ealingCouncil: CouncilAPI = {
