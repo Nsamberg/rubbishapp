@@ -13,33 +13,60 @@ const DEFAULT_REMINDER_PREFS: ReminderPreferences = {
   enabledBinTypes: ['black', 'blue', 'food'] as BinType[],
 };
 
-// Cookies persist across iOS PWA sessions; localStorage does not.
-function setCookie(name: string, value: string) {
-  const expires = new Date();
-  expires.setFullYear(expires.getFullYear() + 1);
-  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Strict`;
+// IndexedDB is the most persistent storage on iOS standalone PWA.
+// localStorage and cookies can be cleared when the app is closed.
+const IDB_NAME = 'rubbishapp';
+const IDB_STORE = 'keyval';
+
+function openDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
 }
 
-function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
-  return match ? decodeURIComponent(match[2]) : null;
+async function idbGet(key: string): Promise<string | null> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result ?? null);
+    req.onerror = () => reject(req.error);
+  });
 }
 
-function deleteCookie(name: string) {
-  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Strict`;
+async function idbSet(key: string, value: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function idbDelete(key: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
 }
 
 const store = {
   async getItem(key: string): Promise<string | null> {
-    if (Platform.OS === 'web') return getCookie(key);
+    if (Platform.OS === 'web') return idbGet(key);
     return AsyncStorage.getItem(key);
   },
   async setItem(key: string, value: string): Promise<void> {
-    if (Platform.OS === 'web') { setCookie(key, value); return; }
+    if (Platform.OS === 'web') return idbSet(key, value);
     return AsyncStorage.setItem(key, value);
   },
   async removeItem(key: string): Promise<void> {
-    if (Platform.OS === 'web') { deleteCookie(key); return; }
+    if (Platform.OS === 'web') return idbDelete(key);
     return AsyncStorage.removeItem(key);
   },
 };
