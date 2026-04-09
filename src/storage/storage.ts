@@ -44,13 +44,16 @@ function openDB(): Promise<IDBDatabase> {
 async function idbGet(key: string): Promise<string | null> {
   try {
     const db = await openDB();
-    return await new Promise((resolve, reject) => {
+    const result = await new Promise<string | null>((resolve, reject) => {
       const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).get(key);
       req.onsuccess = () => resolve(req.result ?? null);
       req.onerror = () => reject(req.error);
     });
+    // Always fall back to localStorage if IDB has nothing — handles the case
+    // where a previous write failed and only localStorage was written to.
+    if (result !== null) return result;
+    try { return localStorage.getItem(key); } catch { return null; }
   } catch {
-    // Fall back to localStorage if IDB fails
     try { return localStorage.getItem(key); } catch { return null; }
   }
 }

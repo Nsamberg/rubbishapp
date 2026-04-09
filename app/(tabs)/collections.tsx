@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { BinCard } from '../../src/components/BinCard';
 import { EmptyState } from '../../src/components/EmptyState';
 import { useCollections } from '../../src/hooks/useCollections';
@@ -26,6 +26,13 @@ export default function CollectionsScreen() {
       });
     }
   }, [collections]);
+
+  // Redirect to onboarding when no address is configured
+  useEffect(() => {
+    if (!loading && error === 'No address saved') {
+      router.replace('/onboarding/postcode');
+    }
+  }, [loading, error]);
 
   // Refresh when screen comes back into focus
   useFocusEffect(

@@ -110,19 +110,30 @@ export default function SettingsScreen() {
 
           {confirmingChange ? (
             <View style={styles.confirmRow}>
-              <Text style={styles.confirmText}>Remove this address?</Text>
+              <Text style={styles.confirmText}>Change your address?</Text>
               <View style={styles.confirmButtons}>
                 <Pressable style={styles.confirmCancel} onPress={() => setConfirmingChange(false)}>
                   <Text style={styles.confirmCancelText}>Cancel</Text>
                 </Pressable>
                 <Pressable style={styles.confirmDelete} onPress={handleConfirmChangeAddress}>
-                  <Text style={styles.confirmDeleteText}>Remove</Text>
+                  <Text style={styles.confirmDeleteText}>Change</Text>
                 </Pressable>
               </View>
             </View>
           ) : (
-            <Pressable style={styles.changeButton} onPress={() => setConfirmingChange(true)}>
-              <Text style={styles.changeButtonText}>Change address</Text>
+            <Pressable
+              style={styles.changeButton}
+              onPress={() => {
+                if (!address) {
+                  router.replace('/onboarding/postcode');
+                } else {
+                  setConfirmingChange(true);
+                }
+              }}
+            >
+              <Text style={styles.changeButtonText}>
+                {address ? 'Change address' : 'Set up address'}
+              </Text>
             </Pressable>
           )}
         </View>
