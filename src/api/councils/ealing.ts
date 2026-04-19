@@ -70,20 +70,21 @@ export const ealingCouncil: CouncilAPI = {
     }
 
     const data = await response.json();
+    console.log('[ealing] raw collection response:', JSON.stringify(data.param2, null, 2));
     if (!Array.isArray(data.param2)) {
       throw new Error('Unexpected response format from collection lookup');
     }
 
-    return data.param2
-      .map((item: { Service: string; collectionDate?: string[]; collectionDateString?: string }) => {
-        const rawDate = item.collectionDateString ||
-          (Array.isArray(item.collectionDate) ? item.collectionDate[0] : '');
-        return {
-          service: item.Service,
-          collectionDate: parseDDMMYYYY(rawDate ?? ''),
-          binType: mapServiceToBinType(item.Service),
-        };
-      })
-      .filter((item: { collectionDate: Date }) => !isNaN(item.collectionDate.getTime()));
+    const mapped = data.param2.map((item: { Service: string; collectionDate?: unknown; collectionDateString?: unknown }) => {
+      const rawDate = (typeof item.collectionDateString === 'string' && item.collectionDateString) ||
+        (Array.isArray(item.collectionDate) ? item.collectionDate[0] : '');
+      const collectionDate = parseDDMMYYYY(typeof rawDate === 'string' ? rawDate : '');
+      if (isNaN(collectionDate.getTime())) {
+        console.warn('[ealing] could not parse date for:', item.Service, '| collectionDateString:', item.collectionDateString, '| collectionDate:', item.collectionDate);
+      }
+      return { service: item.Service, collectionDate, binType: mapServiceToBinType(item.Service) };
+    });
+
+    return mapped.filter((item: { collectionDate: Date }) => !isNaN(item.collectionDate.getTime()));
   },
 };
