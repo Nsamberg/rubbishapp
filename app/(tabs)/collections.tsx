@@ -41,42 +41,6 @@ export default function CollectionsScreen() {
     }, [refresh])
   );
 
-  if (loading && collections.length === 0) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Bin Collections</Text>
-          <Text style={styles.headerDate}>
-            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </Text>
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1a4fa8" />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error && collections.length === 0) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Bin Collections</Text>
-          <Text style={styles.headerDate}>
-            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </Text>
-        </View>
-        <EmptyState
-          icon="⚠️"
-          title="Couldn't load collections"
-          message={error}
-          actionLabel="Try again"
-          onAction={refresh}
-        />
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -84,36 +48,47 @@ export default function CollectionsScreen() {
         <Text style={styles.headerDate}>
           {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </Text>
-        {error && (
-          <Text style={styles.errorBanner}>Could not refresh — showing cached data</Text>
-        )}
       </View>
 
-      <FlatList
-        data={collections}
-        keyExtractor={(item, index) => {
-          const ts = item.collectionDate.getTime();
-          return isNaN(ts) ? `${item.binType}-${index}` : `${item.binType}-${item.collectionDate.toISOString()}`;
-        }}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => <BinCard collection={item} />}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={refresh}
-            tintColor="#1a4fa8"
-            colors={['#1a4fa8']}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyState
-            icon="✅"
-            title="No upcoming collections"
-            message="No collection dates are currently scheduled."
-          />
-        }
-      />
+      {error && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorBannerText}>⚠️ {error}</Text>
+        </View>
+      )}
+
+      {loading && collections.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1a4fa8" />
+        </View>
+      ) : (
+        <FlatList
+          data={collections}
+          keyExtractor={(item, index) => {
+            const ts = item.collectionDate.getTime();
+            return isNaN(ts) ? `${item.binType}-${index}` : `${item.binType}-${item.collectionDate.toISOString()}`;
+          }}
+          contentContainerStyle={styles.list}
+          renderItem={({ item }) => <BinCard collection={item} />}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={refresh}
+              tintColor="#1a4fa8"
+              colors={['#1a4fa8']}
+            />
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon={error ? '⚠️' : '✅'}
+              title={error ? "Couldn't load collections" : 'No upcoming collections'}
+              message={error ? 'Pull down to try again.' : 'No collection dates are currently scheduled.'}
+              actionLabel={error ? 'Try again' : undefined}
+              onAction={error ? refresh : undefined}
+            />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -139,9 +114,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   errorBanner: {
+    backgroundColor: '#fdecea',
+    borderLeftWidth: 4,
+    borderLeftColor: '#c0392b',
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    padding: 12,
+  },
+  errorBannerText: {
     fontSize: 13,
     color: '#c0392b',
-    marginTop: 4,
+    lineHeight: 18,
   },
   loadingContainer: {
     flex: 1,

@@ -75,15 +75,15 @@ export const ealingCouncil: CouncilAPI = {
     }
 
     return data.param2
-      .map((item: { Service: string; collectionDate?: string[]; collectionDateString?: string }) => {
-        const rawDate = item.collectionDateString ||
-          (Array.isArray(item.collectionDate) ? item.collectionDate[0] : '');
-        return {
-          service: item.Service,
-          collectionDate: parseDDMMYYYY(rawDate ?? ''),
-          binType: mapServiceToBinType(item.Service),
-        };
-      })
+      .map((item: { Service: string; collectionDate?: string[] }) => ({
+        service: item.Service,
+        collectionDate: parseDDMMYYYY(
+          Array.isArray(item.collectionDate) && item.collectionDate.length > 0
+            ? item.collectionDate[0]
+            : ''
+        ),
+        binType: mapServiceToBinType(item.Service),
+      }))
       .filter((item: { collectionDate: Date }) => !isNaN(item.collectionDate.getTime()));
   },
 };
