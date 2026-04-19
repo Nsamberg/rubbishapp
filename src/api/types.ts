@@ -1,6 +1,6 @@
 export type CouncilId = 'ealing';
 
-export type BinType = 'black' | 'blue' | 'food' | 'unknown';
+export type BinType = 'black' | 'blue' | 'food' | 'garden' | 'unknown';
 
 export interface AddressResult {
   displayName: string;

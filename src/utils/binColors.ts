@@ -26,6 +26,12 @@ export const BIN_CONFIG: Record<BinType, BinConfig> = {
     label: 'Food Waste',
     emoji: '🍃',
   },
+  garden: {
+    color: '#ffffff',
+    backgroundColor: '#6d4c41',
+    label: 'Garden Waste',
+    emoji: '🌿',
+  },
   unknown: {
     color: '#ffffff',
     backgroundColor: '#757575',

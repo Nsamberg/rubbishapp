@@ -11,6 +11,7 @@ function mapServiceToBinType(service: string): BinType {
   if (s.includes('BLACK')) return 'black';
   if (s.includes('BLUE') || s.includes('RECYCLING')) return 'blue';
   if (s.includes('FOOD')) return 'food';
+  if (s.includes('GARDEN')) return 'garden';
   return 'unknown';
 }
 
@@ -74,11 +75,15 @@ export const ealingCouncil: CouncilAPI = {
     }
 
     return data.param2
-      .map((item: { Service: string; collectionDateString: string }) => ({
-        service: item.Service,
-        collectionDate: parseDDMMYYYY(item.collectionDateString),
-        binType: mapServiceToBinType(item.Service),
-      }))
+      .map((item: { Service: string; collectionDate?: string[]; collectionDateString?: string }) => {
+        const rawDate = item.collectionDateString ||
+          (Array.isArray(item.collectionDate) ? item.collectionDate[0] : '');
+        return {
+          service: item.Service,
+          collectionDate: parseDDMMYYYY(rawDate ?? ''),
+          binType: mapServiceToBinType(item.Service),
+        };
+      })
       .filter((item: { collectionDate: Date }) => !isNaN(item.collectionDate.getTime()));
   },
 };
