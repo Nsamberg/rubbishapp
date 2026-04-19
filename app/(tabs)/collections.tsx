@@ -91,7 +91,10 @@ export default function CollectionsScreen() {
 
       <FlatList
         data={collections}
-        keyExtractor={(item) => `${item.binType}-${item.collectionDate.toISOString()}`}
+        keyExtractor={(item, index) => {
+          const ts = item.collectionDate.getTime();
+          return isNaN(ts) ? `${item.binType}-${index}` : `${item.binType}-${item.collectionDate.toISOString()}`;
+        }}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => <BinCard collection={item} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}

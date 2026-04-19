@@ -1,5 +1,9 @@
 export function parseDDMMYYYY(dateString: string): Date {
-  const [day, month, year] = dateString.split('/').map(Number);
+  if (!dateString || typeof dateString !== 'string') return new Date(NaN);
+  const parts = dateString.split('/');
+  if (parts.length !== 3) return new Date(NaN);
+  const [day, month, year] = parts.map(Number);
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return new Date(NaN);
   const date = new Date(year, month - 1, day);
   date.setHours(0, 0, 0, 0);
   return date;

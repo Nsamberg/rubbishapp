@@ -73,10 +73,12 @@ export const ealingCouncil: CouncilAPI = {
       throw new Error('Unexpected response format from collection lookup');
     }
 
-    return data.param2.map((item: { Service: string; collectionDateString: string }) => ({
-      service: item.Service,
-      collectionDate: parseDDMMYYYY(item.collectionDateString),
-      binType: mapServiceToBinType(item.Service),
-    }));
+    return data.param2
+      .map((item: { Service: string; collectionDateString: string }) => ({
+        service: item.Service,
+        collectionDate: parseDDMMYYYY(item.collectionDateString),
+        binType: mapServiceToBinType(item.Service),
+      }))
+      .filter((item: { collectionDate: Date }) => !isNaN(item.collectionDate.getTime()));
   },
 };
